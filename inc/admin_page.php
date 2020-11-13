@@ -3,7 +3,7 @@
 class PSM_Admin_Interface {
 
 	public function __construct() {
-		add_action( 'admin_init', array( $this, 'admin_menu_item' ) );
+		add_action( 'admin_menu', array( $this, 'admin_menu_item' ) );
 	}
 
 	public function admin_menu_item() {
