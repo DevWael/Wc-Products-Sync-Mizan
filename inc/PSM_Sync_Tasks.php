@@ -39,7 +39,7 @@ class PSM_Sync_Tasks {
 			return false;
 		} elseif ( $mizan->result ) {
 			PSM_Helpers::delete_option( 'store_list' );
-			PSM_Helpers::update_option( 'store_list', wp_json_encode( $mizan->result ) );
+			PSM_Helpers::update_option( 'store_list', $mizan->result );
 			wpqt_create_task( 'psm-update-products-tasks', 'ok' );
 
 			return true;
@@ -70,6 +70,7 @@ class PSM_Sync_Tasks {
 		return false;
 	}
 
+	//update stock quantity for each product
 	public function update_products( $data, $queue ) {
 		if ( $data ) {
 			$products = json_decode( $data, true );
