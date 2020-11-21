@@ -41,18 +41,14 @@ class Mizan_API {
 	 * @return string|WP_Error
 	 */
 	protected function get_request( $url ) {
-		return \wp_remote_get( $url, array(
-			'headers' => $this->headers()
+		return wp_remote_get( $url, array(
+			'headers' => array(
+				'Securitykey' => $this->security_key,
+			)
 		) );
 	}
 
 	private function all_products_route() {
 		return $this->api_route . $this->all_products;
-	}
-
-	private function headers() {
-		return array(
-			'Securitykey' => $this->security_key,
-		);
 	}
 }

@@ -3,6 +3,10 @@
 class PSM_Sync_Tasks {
 
 	public function __construct() {
+		add_action( 'init', array( $this, 'init' ) );
+	}
+
+	public function init() {
 		$this->get_all_products_task();
 	}
 
@@ -36,14 +40,17 @@ class PSM_Sync_Tasks {
 		$mizan->request();
 		if ( $mizan->errors ) {
 			//there are errors
+			PSM_Helpers::update_option( 'store_list_error', 'error' );
+
 			return false;
 		} elseif ( $mizan->result ) {
-			PSM_Helpers::delete_option( 'store_list' );
+			//PSM_Helpers::delete_option( 'store_list' );
 			PSM_Helpers::update_option( 'store_list', $mizan->result );
-			wpqt_create_task( 'psm-update-products-tasks', 'ok' );
+			wpqt_create_task( 'psm-update-products-tasks', 'psm-update-products-tasks' );
 
 			return true;
 		}
+		PSM_Helpers::update_option( 'store_list_error2', 'error' );
 
 		return false;
 	}
@@ -78,7 +85,12 @@ class PSM_Sync_Tasks {
 				foreach ( $products as $product ) {
 					$product_sku = $product['p_prodidco'];
 					$product_obj = PSM_Helpers::get_product_by_sku( $product_sku );
-					$product_obj->set_stock_quantity( $product['p_curnbals'] ); //update stock quantity
+					if ( $product_obj ) {
+						$product_obj->set_stock_quantity( $product['p_curnbals'] ); //update stock quantity
+						psm_insert_log( $product_obj->get_id(), 1 );//log product_id from store as success
+					} else {
+						psm_insert_log( $product['p_prodidco'], 0 ); //log product sku from api as failed
+					}
 				}
 			} else {
 				return false;
