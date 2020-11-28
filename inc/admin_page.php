@@ -19,20 +19,21 @@ class PSM_Admin_Interface {
             #sync-data {
                 font-family: Arial, Helvetica, sans-serif;
                 border-collapse: collapse;
-                width: 75%;
+                width: 70%;
             }
 
             #sync-data td, #sync-data th {
                 border: 1px solid #ddd;
-                padding: 8px;
+                padding: 5px;
+                transition: 300ms;
             }
 
             #sync-data tr:nth-child(even) {
-                background-color: #f2f2f2;
+                background-color: #dcdcdc;
             }
 
             #sync-data tr:hover {
-                background-color: #ddd;
+                background-color: #d0d0d0;
             }
 
             #sync-data th {
