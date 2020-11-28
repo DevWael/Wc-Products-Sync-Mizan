@@ -14,9 +14,6 @@ define( 'PSM_URI', plugin_dir_url( __FILE__ ) );
 
 //check if woocommerce is active
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-	if ( ! function_exists( 'wp_queue_tasks_init' ) ) {
-		require_once PSM_DIR . 'inc/wp-queue-tasks/wp-queue-tasks.php'; //tasks engine
-	}
 	require_once PSM_DIR . 'inc/action-scheduler/action-scheduler.php';
 	require_once PSM_DIR . 'inc/PSM_Helpers.php'; //helper functions
 //require_once PSM_DIR . 'inc/functions.php'; //Hooked functions
