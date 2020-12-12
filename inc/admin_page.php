@@ -50,7 +50,7 @@ class PSM_Admin_Interface {
         <table id="sync-data">
             <tr>
                 <th>#</th>
-                <th>Message</th>
+                <th>Product ID</th>
                 <th>Sync Date</th>
                 <th>Status</th>
             </tr>
@@ -71,7 +71,7 @@ class PSM_Admin_Interface {
 						}
 						?></td>
                     <td><?php echo esc_html( $result['sync_date'] ) ?></td>
-                    <td><?php echo esc_html( $result['status'] ) == 1 ? 'Successful' : 'failed'; ?></td>
+                    <td><?php echo $result['status'] ? 'Successful' : 'failed'; ?></td>
                 </tr>
 				<?php $i ++;
 			} ?>

@@ -1,16 +1,9 @@
 <?php
-//add_action( 'init', 'psm_get_products_hourly_event' );
-// run psm_get_products_task function hourly
-//function psm_get_products_hourly_event() {
-//	if ( false === as_next_scheduled_action( 'psm_every_min_task' ) ) {
-//		as_schedule_recurring_action( time(), HOUR_IN_SECONDS, 'psm_every_hour_task', array(), 'mizan_sync' );
-//	}
-//}
-
 //create psm-get-products task every hour
 add_action( 'init', 'psm_get_products' );
 function psm_get_products() {
-	$data = get_transient( 'mizan_data' );
+	$data = get_transient( 'mizan_process_latest_store_details' );
+//	as_unschedule_action( 'psm_update_products', array(), 'mizan_sync' );
 	if ( $data == false ) {
 		$mizan = new Mizan_API();
 		$mizan->request();
@@ -19,65 +12,30 @@ function psm_get_products() {
 			psm_insert_log( 'Failed to connect', 0 );//log product_id from store as success
 		} elseif ( $mizan->result ) {
 			//PSM_Helpers::delete_option( 'store_list' );
-			PSM_Helpers::update_option( 'store_list', $mizan->result );
+			PSM_Helpers::update_option( 'store_latest_results', $mizan->result );
 			if ( $mizan->result ) {
-				set_transient( 'mizan_data', $mizan->result, HOUR_IN_SECONDS );
-				$store_products_array = json_decode( $mizan->result, true );
-				$i                    = 1;
-				$products             = array();
-				foreach ( $store_products_array as $store_product ) {
-					$products[] = $store_product;
-					if ( $i % 5 == 0 ) {
-						if ( false === as_next_scheduled_action( 'psm_update_products', array( 'products_data' => wp_json_encode( $products ) ), 'mizan_sync' ) ) {
-							as_schedule_single_action( time(), 'psm_update_products', array( 'products_data' => wp_json_encode( $products ) ), 'mizan_sync' );
-						}
-						$products = array();
-					}
-					$i ++;
+				set_transient( 'mizan_process_latest_store_details', 'ok', HOUR_IN_SECONDS );
+				if ( false === as_next_scheduled_action( 'psm_update_all_products', array(), 'mizan_sync' ) ) {
+					as_schedule_single_action( time(), 'psm_update_all_products', array(), 'mizan_sync' );
 				}
 			}
 		}
 	}
 }
 
-//add_action( 'psm_prepare_update_products_tasks', 'psm_prepare_update_products_tasks_run' );
-//function psm_prepare_update_products_tasks_run() {
-//	PSM_Helpers::Log( 'create updating tasks', 'Success' );
-//	$store_products = PSM_Helpers::get_option( 'store_list' );
-//	if ( $store_products ) {
-//		$store_products_array = json_decode( $store_products, true );
-//		$i                    = 1;
-//		$products             = array();
-//		foreach ( $store_products_array as $store_product ) {
-//			$products[] = $store_product;
-//			if ( $i % 5 == 0 ) {
-//				//divide all products into 5 products in each task array
-////				wpqt_create_task( 'psm-update-products', wp_json_encode( $products ) );
-//				as_schedule_single_action( time(), 'psm_update_products', array( 'products_data' => wp_json_encode( $products ) ), 'mizan_sync' );
-//				$products = array();
-//			}
-//			$i ++;
-//		}
-//
-//		return true;
-//	}
-//
-//	return false;
-//}
-
-add_action( 'psm_update_products', function ( $data ) {
-	PSM_Helpers::Log( 'update products', 'Success' );
-	if ( $data ) {
+add_action( 'psm_update_all_products', function ( $data = null ) {
+	if ( $data = PSM_Helpers::get_option( 'store_latest_results' ) ) {
 		$products = json_decode( $data, true );
 		if ( is_array( $products ) ) {
 			foreach ( $products as $product ) {
 				$product_sku = $product['p_prodidco'];
-				$product_obj = PSM_Helpers::get_product_by_sku( $product_sku );
-				if ( $product_obj ) {
+				$product_id  = wc_get_product_id_by_sku( $product_sku );
+				if ( $product_id ) {
+					$product_obj = wc_get_product( $product_id );
 					$product_obj->set_stock_quantity( $product['p_curnbals'] ); //update stock quantity
 					psm_insert_log( $product_obj->get_id(), 1 );//log product_id from store as success
 				} else {
-					psm_insert_log( $product['p_prodidco'], 0 ); //log product sku from api as failed
+//					psm_insert_log( $product['p_prodidco'], 0 ); //log product sku from api as failed
 				}
 			}
 		} else {
@@ -92,7 +50,6 @@ add_action( 'psm_update_products', function ( $data ) {
 
 
 function psm_insert_log( $product_id, $sync_status ) {
-	PSM_Helpers::Log( 'db log', 'Success' );
 	global $wpdb;
 	$wpdb->insert( $wpdb->prefix . 'psm_sync_log', array(
 		'product_id' => $product_id,
@@ -110,4 +67,9 @@ function psm_get_product_sync_log_results( $product_id ) {
 	global $wpdb;
 
 	return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "psm_sync_log WHERE product_id = '" . $product_id . "' LIMIT 100;" ), ARRAY_A );
+}
+
+add_filter( 'action_scheduler_queue_runner_time_limit', 'psm_increase_time_limit' );
+function psm_increase_time_limit( $time_limit ) {
+	return 800;
 }
