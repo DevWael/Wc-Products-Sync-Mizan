@@ -14,7 +14,7 @@ function psm_get_products() {
 			//PSM_Helpers::delete_option( 'store_list' );
 			PSM_Helpers::update_option( 'store_latest_results', $mizan->result );
 			if ( $mizan->result ) {
-				set_transient( 'mizan_process_latest_store_details', 'ok', HOUR_IN_SECONDS );
+				set_transient( 'mizan_process_latest_store_details', 'ok', 30 * MINUTE_IN_SECONDS );
 				if ( false === as_next_scheduled_action( 'psm_update_all_products', array(), 'mizan_sync' ) ) {
 					as_schedule_single_action( time(), 'psm_update_all_products', array(), 'mizan_sync' );
 				}
@@ -33,7 +33,16 @@ add_action( 'psm_update_all_products', function ( $data = null ) {
 				if ( $product_id ) {
 					$product_obj = wc_get_product( $product_id );
 					$product_obj->set_stock_quantity( $product['p_curnbals'] ); //update stock quantity
-					psm_insert_log( $product_obj->get_id(), 1 );//log product_id from store as success
+					if ( is_numeric( $product['p_curnbals'] ) ) {
+						if ( $product['p_curnbals'] > 2 ) {
+							$quantity = $product['p_curnbals'] - 2;
+						} else {
+							$quantity = 0;
+						}
+						wc_update_product_stock( $product_obj, $quantity );
+						wc_delete_product_transients( $product_id );
+						psm_insert_log( $product_obj->get_id(), 1 );//log product_id from store as success
+					}
 				} else {
 //					psm_insert_log( $product['p_prodidco'], 0 ); //log product sku from api as failed
 				}
