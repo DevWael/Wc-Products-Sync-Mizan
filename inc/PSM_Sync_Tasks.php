@@ -39,6 +39,7 @@ add_action( 'psm_update_all_products', function ( $data = null ) {
 						} else {
 							$quantity = 0;
 						}
+						$quantity = $product['p_curnbals'];//remove this tonight
 						wc_update_product_stock( $product_obj, $quantity );
 						wc_delete_product_transients( $product_id );
 						psm_insert_log( $product_obj->get_id(), 1 );//log product_id from store as success
