@@ -2,6 +2,7 @@
 //create psm-get-products task every hour
 add_action( 'init', 'psm_get_products' );
 function psm_get_products() {
+//	delete_transient('mizan_process_latest_store_details');
 	$data = get_transient( 'mizan_process_latest_store_details' );
 //	as_unschedule_action( 'psm_update_products', array(), 'mizan_sync' );
 	if ( $data == false ) {
@@ -14,7 +15,7 @@ function psm_get_products() {
 			//PSM_Helpers::delete_option( 'store_list' );
 			PSM_Helpers::update_option( 'store_latest_results', $mizan->result );
 			if ( $mizan->result ) {
-				set_transient( 'mizan_process_latest_store_details', 'ok', 30 * MINUTE_IN_SECONDS );
+				set_transient( 'mizan_process_latest_store_details', 'ok', PSM_Helpers::get_option( 'sync_period' ) ? PSM_Helpers::get_option( 'sync_period' ) : ( 30 * MINUTE_IN_SECONDS ) );
 				if ( false === as_next_scheduled_action( 'psm_update_all_products', array(), 'mizan_sync' ) ) {
 					as_schedule_single_action( time(), 'psm_update_all_products', array(), 'mizan_sync' );
 				}
@@ -25,7 +26,8 @@ function psm_get_products() {
 
 add_action( 'psm_update_all_products', function ( $data = null ) {
 	if ( $data = PSM_Helpers::get_option( 'store_latest_results' ) ) {
-		$products = json_decode( $data, true );
+		$products        = json_decode( $data, true );
+		$store_reduction = PSM_Helpers::get_option( 'sync_reduction' ) ? PSM_Helpers::get_option( 'sync_reduction' ) : 0;
 		if ( is_array( $products ) ) {
 			foreach ( $products as $product ) {
 				$product_sku = $product['p_prodidco'];
@@ -34,8 +36,8 @@ add_action( 'psm_update_all_products', function ( $data = null ) {
 					$product_obj = wc_get_product( $product_id );
 					$product_obj->set_stock_quantity( $product['p_curnbals'] ); //update stock quantity
 					if ( is_numeric( $product['p_curnbals'] ) ) {
-						if ( $product['p_curnbals'] > 2 ) {
-							$quantity = $product['p_curnbals'] - 2;
+						if ( $product['p_curnbals'] > $store_reduction ) {
+							$quantity = $product['p_curnbals'] - $store_reduction;
 						} else {
 							$quantity = 0;
 						}
